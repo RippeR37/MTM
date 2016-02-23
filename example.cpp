@@ -48,7 +48,7 @@ void example_1() {
         taskManager.push(task1, task2, task3);
 
         // Wait for results and print them
-        auto task1_result = Task::getResult(task1); //
+        auto task1_result = Task::getResult(task1);
         std::cout << "Task #1 completed! Result: " << task1_result << std::endl;
 
         auto task2_result = Task::getResult(task2);
@@ -81,8 +81,9 @@ void example_2() {
         auto task4 = Task::make([]() { generic_task(4, 3); }, taskManager, task1, task2); 
         auto task5 = Task::make([]() { generic_task(5, 4); }, taskManager, task1, task2);
 
-        // Push base tasks
-        taskManager.push(task1, task2, task3);
+        // Push base tasks, all dependent tasks (#4 and #5) will be ignored and pushed
+        // automatically when all of their dependencies (#1 and #2) will be completed
+        taskManager.push(task1, task2, task3, task4, task5); // #4 and #5 will be ignored
 
         // Join after execution of last task (not necessary, destructor joins too)
         // after this call taskManager can't be used anymore (all worker threads are stopped)

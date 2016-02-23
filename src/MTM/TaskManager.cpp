@@ -31,11 +31,12 @@ namespace MTM
     }
 
     void TaskManager::push(const Task& task) {
-        push(task._task);
+        if(task._dependencyCounter == false || *task._dependencyCounter == 0)
+            push(task._task);
     }
 
     void TaskManager::push(const std::shared_ptr<Task>& task) {
-        push(task->_task);
+        push(*task);
     }
 
     int TaskManager::activeTasks() const {

@@ -11,9 +11,7 @@ namespace MTM
 
     Task::Task(FuncType<void> f, const RefVectorType& dependencies) {
         _task = std::move(f);
-        _dependencyCounter = std::make_shared<AtomicCounterType>(0);
-
-        (void) dependencies; // unused
+        _dependencyCounter = std::make_shared<AtomicCounterType>(dependencies.size());
     }
 
     Task::ReturnType<void> Task::make(FuncType<void> f) {
@@ -51,16 +49,15 @@ namespace MTM
 
     Task::TaskType Task::_make(FuncType<void> f, TaskManager& tm, RefVectorType& dependencies) {
         TaskType thisTask = TaskType(new Task(f, dependencies));
-        int dependenciesCount = static_cast<int>(dependencies.size());
 
         for(const RefTaskType& dependencyRef : dependencies) {
             TaskType& dependency = dependencyRef;
 
             FuncType<void> oldTask = dependency->_task;
-            FuncType<void> newTask = [oldTask, thisTask, dependenciesCount, &tm]() {
+            FuncType<void> newTask = [oldTask, thisTask, &tm]() {
                 oldTask();
 
-                if(thisTask->_dependencyCounter->fetch_add(1) + 1 == dependenciesCount)
+                if(thisTask->_dependencyCounter->fetch_sub(1) - 1 == 0)
                     tm.push(thisTask);
             };
 
