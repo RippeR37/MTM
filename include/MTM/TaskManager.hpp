@@ -43,10 +43,13 @@ namespace MTM
         int activeTasks() const;
         int remainingTasks();
 
-        void clear();
+        void clearTasks();
         void join();
+        void restart();
 
     protected:
+        void _restart(unsigned int workers);
+        void _spawnWorkers(unsigned int workers);
         void _joinWorkers();
         void _workerProcedure(int workerId);
 

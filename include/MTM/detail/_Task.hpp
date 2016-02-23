@@ -32,9 +32,8 @@ namespace MTM
         return std::make_tuple(_make(std::move(newTask)), std::move(future));
     }
 
-
-    template<typename T, typename Q, typename... Qs>
-    Task::ReturnType<T> Task::make(FuncType<T> f, TaskManager& tm, ReturnType<Q>& dependency, ReturnType<Qs>&... ds) {
+    template<typename T, typename D, typename... Ds>
+    Task::ReturnType<T> Task::make(FuncType<T> f, TaskManager& tm, D& dependency, Ds&... ds) {
         std::shared_ptr<std::promise<T>> promise = std::make_shared<std::promise<T>>();
         std::future<T> future = promise->get_future();
 
@@ -52,8 +51,8 @@ namespace MTM
         return std::make_tuple(_make(std::move(newTask), tm, dependencies), std::move(future));
     }
 
-    template<typename Q, typename... Qs>
-    Task::ReturnType<void> Task::make(FuncType<void> f, TaskManager& tm, ReturnType<Q>& dependency, ReturnType<Qs>&... ds) {
+    template<typename D, typename... Ds>
+    Task::ReturnType<void> Task::make(FuncType<void> f, TaskManager& tm, D& dependency, Ds&... ds) {
         std::shared_ptr<std::promise<void>> promise = std::make_shared<std::promise<void>>();
         std::future<void> future = promise->get_future();
 
@@ -88,8 +87,8 @@ namespace MTM
     }
 
 
-    template<typename Q, typename... Qs>
-    Task::RefVectorType Task::_filterDependencies(ReturnType<Q>& dependency, ReturnType<Qs>&... ds) {
+    template<typename D, typename... Ds>
+    Task::RefVectorType Task::_filterDependencies(D& dependency, Ds&... ds) {
         return RefVectorType { std::get<0>(dependency), std::get<0>(ds)... };
     }
 

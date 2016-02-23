@@ -7,13 +7,9 @@ namespace MTM
 
     TaskManager::TaskManager() : TaskManager(_getThreadCount()) { }
 
-    TaskManager::TaskManager(unsigned int workers) {
-        _end = false;
-        _joined = false;
+    TaskManager::TaskManager(unsigned int workers) : _end(false), _joined(true) {
         _workers.reserve(workers);
-
-        for(unsigned int i = 0; i < workers; ++i)
-            _workers.emplace_back(std::bind(&TaskManager::_workerProcedure, this, i));
+        _restart(workers);
     }
 
     TaskManager::~TaskManager() {
@@ -52,7 +48,7 @@ namespace MTM
         return static_cast<int>(_tasks.size());
     }
 
-    void TaskManager::clear() {
+    void TaskManager::clearTasks() {
         std::unique_lock<std::mutex> lock(_mutex);
 
         std::queue<std::function<void()>>().swap(_tasks);
@@ -60,8 +56,33 @@ namespace MTM
 
     void TaskManager::join() {
         _joined = true;
+        _cVar.notify_one();
+
+        _joinWorkers();
     }
 
+    void TaskManager::restart() {
+        _restart(_workers.size());
+    }
+
+
+    void TaskManager::_restart(unsigned int workers) {
+        std::unique_lock<std::mutex> lock(_mutex);
+
+        if(!_end && !_joined)
+            join();
+        
+        _end = false;
+        _joined = false;
+
+        _workers.clear();
+        _spawnWorkers(workers);
+    }
+    
+    void TaskManager::_spawnWorkers(unsigned int workers) {
+        for(unsigned int workerId = 0; workerId < workers; ++workerId)
+            _workers.emplace_back(std::bind(&TaskManager::_workerProcedure, this, workerId));
+    }
 
     void TaskManager::_joinWorkers() {
         for(auto& thread : _workers)
@@ -79,16 +100,15 @@ namespace MTM
             {
                 std::unique_lock<std::mutex> lock(_mutex);
 
-                if(_joined && _tasks.empty() && _activeTasks.load() == 0) {
+                if(_joined && _tasks.empty() && _activeTasks == 0) {
                     _end = true;
                     _cVar.notify_all();
                     break;
                 }
 
-                while(!_end && _tasks.empty())
-                    _cVar.wait(lock);
+                _cVar.wait(lock, [this]() { return (_end || _joined || !_tasks.empty()); });
 
-                if(_end && _tasks.empty() && _activeTasks.load() == 0) {
+                if(_end && _tasks.empty() && _activeTasks == 0) {
                     break;
                 } else if(!_tasks.empty()) {
                     currentTask = std::move(_tasks.front());

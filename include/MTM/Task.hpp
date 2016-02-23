@@ -50,10 +50,10 @@ namespace MTM
         static ReturnType<Type> make(FuncType<Type> f);
         static ReturnType<void> make(FuncType<void> f);
 
-        template<typename Type, typename Q, typename... Qs>
-        static ReturnType<Type> make(FuncType<Type> f, TaskManager& tm, ReturnType<Q>& dependency, ReturnType<Qs>&... ds);
-        template<typename Q, typename... Qs>
-        static ReturnType<void> make(FuncType<void> f, TaskManager& tm, ReturnType<Q>& dependency, ReturnType<Qs>&... ds);
+        template<typename Type, typename D, typename... Ds>
+        static ReturnType<Type> make(FuncType<Type> f, TaskManager& tm, D& dependency, Ds&... ds);
+        template<typename D, typename... Ds>
+        static ReturnType<void> make(FuncType<void> f, TaskManager& tm, D& dependency, Ds&... ds);
 
         // Return & result access helpers
         template<typename Type>
@@ -79,8 +79,8 @@ namespace MTM
         static TaskType _make(FuncType<void> f);
         static TaskType _make(FuncType<void> f, TaskManager& tm, RefVectorType& dependencies);
 
-        template<typename Q, typename... Qs>
-        static RefVectorType _filterDependencies(ReturnType<Q>& dependency, ReturnType<Qs>&... ds);
+        template<typename D, typename... Ds>
+        static RefVectorType _filterDependencies(D& dependency, Ds&... ds);
 
     protected:
         //

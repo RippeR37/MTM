@@ -6,33 +6,44 @@ Allows you to execute tasks asynchronously on created thread pool with support f
 
 ### Example of usage
 ```cpp
-    // Default number of thread pool (std::thread::hardware_concurency() or 2)
-    MTM::TaskManager tm; // or MTM::TaskManager tm(n);
-    
-    // Task without result and any dependency
-    auto task1 = MTM::Task::make(/* anything callable here with void return type */);
+    using namespace MTM;
 
-    // Task with result of type int
-    auto task2 = MTM::Task::make<int>([]() { /* ... */ return 42; });
+    // Default number of thread pool (std::thread::hardware_concurency() or 2)
+    TaskManager tm; // or TaskManager tm(n);
+    
+    // Task with void result type and without any dependency
+    auto task1 = Task::make(Callable);
+
+    // Task with result of type int and without any dependency
+    auto task2 = Task::make<int>([]() { /* ... */ return 42; });
 
     // Task that depends on other tasks to be executed
-    // will be added to task manager after execution of it's dependencies
-    auto task3 = MTM::Task::make([]() { /* ... */ }, tm, task1, task2); // depends on task1 and task2
+    // Will be added to task manager after execution of it's dependencies
+    // NOTE: It's guaranteed to execute after completion of all of it's dependencies
+    auto task3 = Task::make<int>([]() { return 1; }, tm, task1, task2); // depends on task1 and task2
 
     // Push (basic) tasks to task manager
-    // tasks with dependencies will be added automatically
+    // Tasks with dependencies will be added automatically
+    // NOTE: Push task which are dependencies only after creating all dependent tasks!
     tm.push(task1, task2); 
 
-    // You can wait (and block) for specific task to be completed
-    MTM::Task::getResult(task1); // waits for task1 to finish
+    // You can wait (block) and retrieve for specific task to be completed
+    Task::getResult(task1);                    // void return type
+    int task2_result = Task::getResult(task2); // int  return type
 
-    // You can forget about created task at this point and store only it's future
-    std::future<int> task2_future = MTM::Task::getFuture(task2);
-    int r2 = task2_future.get(); // waits for task2 to finish, r2 == 42
+    // You can forget about created task when you created all dependent tasks
+    // and pushed this one and store only it's std::future<T> object
+    std::future<int> task3_future = Task::getFuture(task3);
+    // Some time later... (might block)
+    int task3_result = task3_future.get(); // task3_result == 1
 
     // You can join on task manager at any time (once) to block until all tasks will be executed
-    tm.join(); // wait for all (#1, #2 and #3) tasks to finish
+    tm.join(); // waits for all pushed and dependent tasks to finish
+    
     // After that point, tm is stopped and won't run any new tasks
+    // If you want to reuse this task manager object, use restart() method
+    tm.restart();
+    // Now tm acts just like new TaskManager instance.
 ```
 
 
